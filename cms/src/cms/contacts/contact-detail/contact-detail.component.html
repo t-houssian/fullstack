@@ -1,0 +1,24 @@
+<div class="panel panel-default">
+	<div class="panel-heading">
+        <div class="row">
+          <div class="col-md-7">
+            <h3>{{Contact.name}}</h3>
+          </div>
+        </div>
+        <div class="row">
+            <div class="col-md-7">
+                <img src="{{Contact.imageUrl}}">
+            </div>
+            <div class="col-md-5">
+                <div class="row btn-toolbar">
+                    <button class="btn btn-primary mr-1">Edit</button>
+                    <button class="btn btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+	<div class="panel-body">
+		<p for="email">Email: <strong>{{ Contact.email }}</strong></p>
+		<p for="phone">Phone: <strong>{{ Contact.phone }}</strong></p>
+	</div>
+</div>
