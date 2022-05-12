@@ -7,7 +7,7 @@ import { Message } from './messages/message.model';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'W3';
+  title = 'Cms';
   selectedFeature:string = "messages"
 
   switchView(selectedFeature:string){
