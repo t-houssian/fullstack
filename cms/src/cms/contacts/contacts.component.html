@@ -1,6 +1,6 @@
 <div class="row container">
 	<div class="col-md-5">
-		<app-contact-list (selectedContactEvent)="selectedContent = $event"></app-contact-list>
+		<app-contact-list></app-contact-list>
 	</div>
 	<div class="col-md-4">
 		<app-contact-detail *ngIf="selectedContent; else infoText" [Contact]="selectedContent"></app-contact-detail>
