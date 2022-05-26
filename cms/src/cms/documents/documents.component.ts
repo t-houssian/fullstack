@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit} from '@angular/core';
 import { Document } from './document.model';
 import { DocumentService } from './document.service';
 
@@ -6,10 +6,8 @@ import { DocumentService } from './document.service';
   selector: 'app-documents',
   templateUrl: './documents.component.html',
   styleUrls: ['./documents.component.css'],
-  providers: [DocumentService]
 })
 export class DocumentsComponent implements OnInit {
-  @Input() documents: Document;
   selectedDocument: Document;
 
   constructor(private documentService: DocumentService) { }

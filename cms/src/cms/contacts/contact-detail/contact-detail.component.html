@@ -11,8 +11,8 @@
             </div>
             <div class="col-md-5">
                 <div class="row btn-toolbar">
-                    <button class="btn btn-primary mr-1">Edit</button>
-                    <button class="btn btn-danger">Delete</button>
+                    <button class="btn btn-primary mr-1" [routerLink]="['edit']">Edit</button>
+                    <button class="btn btn-danger" (click)="onDelete()">Delete</button>
                 </div>
             </div>
         </div>
