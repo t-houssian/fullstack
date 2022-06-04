@@ -17,10 +17,10 @@ export class ContactsComponent implements OnInit {
   ngOnInit(): void {
     this.contactService.contactSelectedEvent
       .subscribe(
-        (contact:Contact)=>{
-          this.selectedContent = contact;
+        (contacts:Contact[])=>{
+          contacts = contacts;
         }
-      )
+    )
   }
 
 }
