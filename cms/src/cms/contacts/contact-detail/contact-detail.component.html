@@ -20,5 +20,11 @@
 	<div class="panel-body">
 		<p for="email">Email: <strong>{{ Contact.email }}</strong></p>
 		<p for="phone">Phone: <strong>{{ Contact.phone }}</strong></p>
+        
+        <p>
+            <span class="h4">Contacts in Team: </span>
+            <span class="h4" *ngIf="!Contact.group || Contact.group.length <= 0">None</span>
+        </p>
+        <app-contact-item *ngFor="let contact of Contact.group" [contact]="contact"></app-contact-item>
 	</div>
 </div>

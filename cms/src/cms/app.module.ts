@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { DndModule } from 'ng2-dnd';
 
 import { AppComponent } from './app.component';
 import { ContactsComponent } from './contacts/contacts.component';
@@ -47,6 +48,7 @@ import { ContactEditComponent } from './contacts/contact-edit/contact-edit.compo
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,
+    DndModule.forRoot()
   ],
   providers: [],
   bootstrap: [AppComponent]

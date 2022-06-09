@@ -1,4 +1,4 @@
-import { Component, OnInit,Input, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Contact } from '../contact.model';
 
 @Component({
@@ -7,16 +7,15 @@ import { Contact } from '../contact.model';
   styleUrls: ['./contact-item.component.css']
 })
 export class ContactItemComponent implements OnInit {
-  collapsed=false;
-  @Input() contacts:Contact;
-    
-
-  
+  @Input() contact: Contact;
+  @Output() contactSelected = new EventEmitter<void>();
 
   constructor() { }
 
   ngOnInit(): void {
-    
   }
 
+  onSelected(){
+    this.contactSelected.emit();
+  }
 }
