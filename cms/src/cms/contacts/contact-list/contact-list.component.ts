@@ -13,20 +13,25 @@ import {  Subscription } from 'rxjs';
 export class ContactListComponent implements OnInit {
   contacts: Contact[] = []
   subscription: Subscription;
+  term: string = '';
 
   constructor(private ContactService: ContactService) { }
 
   ngOnInit(): void {
-    this.contacts = this.ContactService.getContacts();
-    this.subscription = this.ContactService.contactListChangedEvent
-    .subscribe(
-      (contacts: Contact[]) =>{
-        this.contacts = contacts;
-      }
-    )
+    this.ContactService.contactChangedEvent.subscribe((contacts: Contact[]) => {
+      this.contacts = contacts.slice();
+    });
+    this.subscription = this.ContactService.contactListChangedEvent.subscribe((contacts: Contact[]) => {
+      this.contacts = contacts;
+    });
   }
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
+  }
+
+  search(value: string) {
+    this.term = value;
+    console.log(this.term);
   }
 }

@@ -3,6 +3,8 @@ import { Injectable, EventEmitter } from '@angular/core';
 import { Contact } from './contact.model';
 import { MOCKCONTACTS } from './MOCKCONTACTS';
 
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+
 import { Subject } from 'rxjs';
 
 @Injectable({
@@ -12,41 +14,51 @@ export class ContactService {
 
   contactListChangedEvent = new Subject<Contact[]>();
   contactSelectedEvent = new Subject<Contact[]>();
+  contactChangedEvent = new Subject<Contact[]>();
 
   contacts: Contact[] = [];
   maxContactID: number;
 
-  constructor() { 
-    this.contacts = MOCKCONTACTS;
-    this.maxContactID = this.getMaxId();
+  constructor(private http: HttpClient) { 
+    this.getContacts();
   }
 
-  getContacts(): Contact[] {
-    return this.contacts.slice();
+  getContacts() {
+    this
+    .http
+    .get('https://cmst-58e58-default-rtdb.firebaseio.com/contacts.json')
+    .subscribe((contacts: any) => {
+      this.contacts = contacts;
+      this.maxContactID = this.getMaxId();
+      this.contacts.sort(
+        (l: Contact, r: Contact)=> {
+          if (l.id < r.id) {
+            return -1;
+          } else if (l.id === r.id) {
+            return 0;
+          } else {
+            return 1;
+          }
+        }
+      );
+      this.contactListChangedEvent.next(this.contacts.slice());
+    }, (err: any) => {
+      console.error(err);
+    });
   }
 
-  getContact(id:string): Contact {
-    for(let contact of this.contacts){
-      if (contact.id == id){
+  getContact(id: string): Contact {
+    if (!this.contacts) {
+      return null;
+    }
+
+    for (let contact of this.contacts) {
+      if (contact.id === id) {
         return contact;
       }
-      else()=>{
-        return null;
-      }
     }
-    return null;
-  }
 
-  getMaxId(): number {
-    let maxId =0;
-    for(const contact of this.contacts){
-      const currentId = + contact.id;
-  
-      if (currentId > maxId) {
-        maxId = currentId;
-      }
-    }
-    return maxId;
+    return null;
   }
 
   deleteContact(contact: Contact) {
@@ -58,7 +70,7 @@ export class ContactService {
       return;
     }
     this.contacts.splice(pos, 1);
-    this.contactListChangedEvent.next(this.contacts.slice());
+    this.storeContacts();
   }
 
   addContact(newContact: Contact) {
@@ -69,8 +81,7 @@ export class ContactService {
     this.maxContactID++;
     newContact.id = this.maxContactID.toString();
     this.contacts.push(newContact);
-    let contactsListClone = this.contacts.slice();
-    this.contactListChangedEvent.next(contactsListClone);
+    this.storeContacts();
   }
 
   updateContact(originalContact: Contact, newContact: Contact) {
@@ -85,7 +96,31 @@ export class ContactService {
   
     newContact.id = originalContact.id;
     this.contacts[pos] = newContact;
-    let documentsListClone = this.contacts.slice();
-    this.contactListChangedEvent.next(documentsListClone);
+    this.storeContacts();
+  }
+
+  getMaxId(): number {
+    let maxID = 0;
+    for (let contact of this.contacts) {
+      let currentID = +contact.id;
+      if (currentID > maxID) {
+        maxID = currentID;
+      }
+    }
+
+    return maxID;
+  }
+
+  storeContacts() {
+    let json = JSON.stringify(this.contacts);
+    let header = new HttpHeaders();
+    header.set('Content-Type', 'application/json');
+    this
+    .http
+    .put<{message: string}>('https://cmst-58e58-default-rtdb.firebaseio.com/contacts.json', json, {
+      headers: header
+    }).subscribe(() => {
+      this.contactListChangedEvent.next(this.contacts.slice());
+    });
   }
 }
