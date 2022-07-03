@@ -1,94 +1,113 @@
-import { Injectable, EventEmitter } from '@angular/core';
-
+import { EventEmitter, Injectable } from '@angular/core';
 import { Message } from './message.model';
-import { MOCKMESSAGES } from './MOCKMESSAGES';
-
-import { Subject } from 'rxjs';
-
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MessageService {
-
-  messageChangedEvent = new Subject<Message[]>();
-
   messages: Message[]=[];
+  messageChangedEvent: EventEmitter<Message[]> = new EventEmitter<Message[]>();
   maxMessageId: number;
-
-  constructor(private http: HttpClient) { 
-
-    // this.messages= MOCKMESSAGES;
-
-  }
-
-getMessages(): Message[]{
-  this.http.get<Message[]>('https://cmst-58e58-default-rtdb.firebaseio.com/messages.json')
-  .subscribe(
-    (messages: Message[]) =>{
-      this.messages = messages
-      this.maxMessageId = this.getMaxId();
-      this.messages.sort();
-      this.messageChangedEvent.next(this.messages.slice());
-
-    },
-    (error:any) =>{
-      console.log(error.message);
-    }
-  )
-  return this.messages.slice();
-}
-
-storeMessages(){
-  const json = JSON.stringify(this.messages);
-  this.http.put(
-    'https://cmst-58e58-default-rtdb.firebaseio.com/messages.json',
-    json,
-    {
-      headers: new HttpHeaders({'Content-Type':'application/json'})
-
-    }
-  ).subscribe(() =>{
-    this.messageChangedEvent.next(this.messages.slice());
-  })
-}
-
-getMessage(id:string): Message{
-  for(let message of this.messages){
-    if(message.id===id){
-      return message;
-    }
-    
-
-  }
-  return null;
-}
-
-getMaxId(): number {
   
-  let maxId = 0;
-  for (const message of this.messages) {
-    
-    const currentId = +message.id;
-    //comparison between current id and preset max id (which will only change if current is greater)
-    if (currentId > maxId) {
-   
-      maxId = currentId;
-    }
+  constructor(private http: HttpClient) {
+    this.initMessages();
   }
- 
-  return maxId;
 
-}
+  getMessages(): Message[] {
+    return this.messages.slice();
+  }
 
+  initMessages(): void {
+    this
+    .http
+    .get<{message: string, messages: Message[]}>('http://localhost:3000/messages')
+    .subscribe((response: any) => {
+      this.messages = response.messages;
+      this.maxMessageId = this.getMaxId();
+      this.messages.sort(
+        (lhs: Message, rhs: Message)=>{
+          if (lhs.id < rhs.id) {
+            return -1;
+          } else if (lhs.id === rhs.id) {
+            return 0;
+          } else {
+            return 1;
+          }
+        }
+      );
+      this.messageChangedEvent.next(this.messages.slice());
+    }, (err: any) => {
+      console.error(err);
+    });
+  }
+  
+  getMessage(id: string): Message {
+    if (!this.messages) {
+      return null;
+    }
 
+    for (let message of this.messages) {
+      if (message.id === id) {
+        return message;
+      }
+    }
 
-addMessage(message:Message) {
-  this.messages.push(message);
-  this.storeMessages();
+    return null;
+  }
 
-}
+  addMessage(message: Message): void {
+    if (!message) {
+      return;
+    }
 
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+
+    message.id = '';
+
+    this.http
+    .post<{message: string, newMessage: Message}>('http://localhost:3000/messages', message, {headers: headers})
+    .subscribe((response: any) => {
+      this.messages.push(response.newMessage);
+      this.messages.sort(
+        (lhs: Message, rhs: Message)=>{
+          if (lhs.id < rhs.id) {
+            return -1;
+          } else if (lhs.id === rhs.id) {
+            return 0;
+          } else {
+            return 1;
+          }
+        }
+      );
+      this.messageChangedEvent.next(this.messages.slice());
+    });
+  }
+
+  getMaxId(): number {
+    let maxID = 0;
+    for (let message of this.messages) {
+      let currentID = +message.id;
+      if (currentID > maxID) {
+        maxID = currentID;
+      }
+    }
+    return maxID;
+  }
+
+  storeMessages(): void {
+    let json = JSON.stringify(this.messages);
+    let header = new HttpHeaders();
+    header.set('Content-Type', 'application/json');
+    this
+    .http
+    .put<{message: string}>('http://localhost:3000/messages', json, {
+      headers: header
+    }).subscribe(() => {
+      this.messageChangedEvent.next(this.messages.slice());
+    });
+  }
 
 }

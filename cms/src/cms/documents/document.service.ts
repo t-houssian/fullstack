@@ -1,39 +1,35 @@
-import { Injectable, EventEmitter } from '@angular/core';
-
-import { Document } from './document.model';
-import { MOCKDOCUMENTS } from './MOCKDOCUMENTS';
-
-import {Subject} from 'rxjs';
-
+import { EventEmitter, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
+import { Subject } from 'rxjs';
+import { Document } from './document.model';
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DocumentService {
-
-  documentListChangedEvent = new Subject<Document[]>();
-  documentSelectedEvent = new Subject<Document[]>();
-
   documents: Document[] = [];
+  documentSelectedEvent: EventEmitter<Document> = new EventEmitter<Document>();
+  documentChangedEvent: EventEmitter<Document[]> = new EventEmitter<Document[]>();
+  documentListChangedEvent: Subject<Document[]> = new Subject<Document[]>();
   maxDocumentId: number;
 
   constructor(private http: HttpClient) {
     this.getDocuments();
   }
 
-  getDocuments(){
+  getDocuments(): void {
     this
     .http
-    .get('https://cmst-58e58-default-rtdb.firebaseio.com//documents.json')
-    .subscribe((documents: any) => {
-      this.documents = documents;
+    .get<{message: string, documents: Document[]}>('http://localhost:3000/documents')
+    .subscribe((response: any) => {
+      this.documents = response.documents;
       this.maxDocumentId = this.getMaxId();
       this.documents.sort(
-        (l: Document, r: Document)=> {
-          if (l.id < r.id) {
+        (lhs: Document, rhs: Document)=>{
+          if (lhs.id < rhs.id) {
             return -1;
-          } else if (l.id === r.id) {
+          } else if (lhs.id === rhs.id) {
             return 0;
           } else {
             return 1;
@@ -43,19 +39,6 @@ export class DocumentService {
       this.documentListChangedEvent.next(this.documents.slice());
     }, (err: any) => {
       console.error(err);
-    });
-  }
-
-  storeDocuments() {
-    let json = JSON.stringify(this.documents);
-    let header = new HttpHeaders();
-    header.set('Content-Type', 'application/json');
-    this
-    .http
-    .put<{message: string}>('https://cmst-58e58-default-rtdb.firebaseio.com//documents.json', json, {
-      headers: header
-    }).subscribe(() => {
-      this.documentListChangedEvent.next(this.documents.slice());
     });
   }
 
@@ -73,7 +56,23 @@ export class DocumentService {
     return null;
   }
 
+  deleteDocument(document: Document): void {
+    if (!document) {
+      return;
+    }
 
+    const index = this.documents.indexOf(document);
+    if (index < 0) {
+      return;
+    }
+
+    this.http.delete<{message: String}>(`http://localhost:3000/documents/${document.id}`)
+    .subscribe((response: any) => {
+      this.getDocuments();
+    })
+  }
+
+  
   getMaxId(): number {
     let maxID = 0;
     for (let document of this.documents) {
@@ -84,43 +83,70 @@ export class DocumentService {
     }
     return maxID;
   }
-  
-  deleteDocument(document: Document) {
+
+
+  addDocument(document: Document) {
     if (!document) {
       return;
     }
-    const pos = this.documents.indexOf(document);
-    if (pos < 0) {
-      return;
-    }
-    this.documents.splice(pos, 1);
-    this.storeDocuments();
+  
+    // make sure id of the new Document is empty
+    document.id = '';
+  
+    const headers = new HttpHeaders({'Content-Type': 'application/json'});
+  
+    // add to database
+    this.http.post<{ message: string, document: Document }>('http://localhost:3000/documents',
+      document,
+      { headers: headers })
+      .subscribe(
+        (responseData) => {
+          // add new document to documents
+          this.documents.push(responseData.document);
+          this.documentListChangedEvent.next(this.documents.slice());
+        }
+      );
   }
 
-
-  addDocument(newDocument: Document){
-    if(!newDocument){
-      return;
-    }
-    this.maxDocumentId++;
-    newDocument.id = this.maxDocumentId.toString();
-    this.documents.push(newDocument);
-    this.storeDocuments();
-  }
-
-  updateDocument(originalDocument: Document, newDocument: Document) {
+  
+  updateDocument(originalDocument: Document, newDocument: Document): void {
     if (!originalDocument || !newDocument) {
       return;
     }
 
-    let pos = this.documents.indexOf(originalDocument);
-    if (pos < 0){ 
+    let index = this.documents.indexOf(originalDocument);
+    if (index < 0) {
       return;
     }
+    
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
 
-    newDocument.id = originalDocument.id;
-    this.documents[pos] = newDocument;
-    this.storeDocuments();
+    const strDocument = JSON.stringify(newDocument);
+
+    this.http
+    .put<{message: string}>(`http://localhost:3000/documents/${originalDocument.id}`, strDocument, {headers: headers})
+    .subscribe((response: any) => {
+      this.getDocuments();
+    });
   }
 
+  storeDocuments(documents: Document[]): any {
+    let documentsJSON = JSON.stringify(documents);
+    const httpHeader = new HttpHeaders().set('content-type', 'application/json');
+
+    this.http
+      .put<Document[]>(
+        'http://localhost:3000/documents',
+        documentsJSON,
+        { headers: httpHeader})
+      .subscribe(() => {
+        let documentsClone = [...this.documents];
+        this.documentListChangedEvent.next(documentsClone);
+      }, (error: any) => {
+        console.log(error);
+      }
+    );
+  }
 }
